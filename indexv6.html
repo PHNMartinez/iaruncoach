@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador Inteligente de Periodização de Corrida</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Montserrat:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- TEMA PRETO E DOURADO --- */
+        :root {
+            --cor-fundo: #000;
+            --cor-container: #111;
+            --cor-detalhe: #FFD700; 
+            --cor-texto-principal: #FFD700;
+            --cor-texto-secundario: #E0E0E0;
+            --cor-input-bg: #333;
+            --cor-input-border: #666;
+            --cor-info: #007bff;
+            --cor-sucesso: #28a745;
+            --cor-erro: #dc3545;
+        }
+
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            padding: 20px; 
+            background-color: var(--cor-fundo); 
+            color: var(--cor-texto-secundario); 
+            line-height: 1.6;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 30px auto; 
+            background-color: var(--cor-container); 
+            padding: 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.1); 
+        }
+        
+        h1, h2, h3 { 
+            font-family: 'Montserrat', sans-serif; 
+            color: var(--cor-texto-principal); 
+            text-align: center; 
+            margin-bottom: 20px;
+        }
+
+        .form-group { 
+            margin-bottom: 20px; 
+            padding: 15px;
+            border: 1px solid var(--cor-input-border);
+            border-radius: 8px;
+        }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 700;
+            color: var(--cor-texto-principal);
+        }
+        input[type="text"], input[type="number"], select, textarea { 
+            width: 100%; 
+            padding: 10px; 
+            background-color: var(--cor-input-bg); 
+            border: 1px solid var(--cor-input-border); 
+            color: var(--cor-texto-secundario); 
+            border-radius: 6px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+        textarea { resize: vertical; min-height: 80px; }
+
+        button { 
+            background-color: var(--cor-detalhe); 
+            color: var(--cor-fundo); 
+            padding: 12px 20px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+        button:hover { 
+            filter: brightness(1.2);
+            transform: translateY(-1px);
+        }
+        
+        .btn-delete {
+            background-color: transparent !important;
+            color: #ff4d4d !important;
+            padding: 4px 10px !important;
+            border: 1px solid #ff4d4d !important;
+            font-size: 0.7em !important;
+            border-radius: 4px !important;
+        }
+        .btn-delete:hover {
+            background-color: #ff4d4d !important;
+            color: white !important;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-around;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .button-group button { flex-grow: 1; min-width: 120px; }
+
+        .checkbox-group label {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 15px;
+            cursor: pointer;
+            font-weight: 400;
+        }
+        
+        #output { 
+            margin-top: 30px; 
+            padding: 20px; 
+            border: 2px solid var(--cor-detalhe); 
+            border-radius: 10px; 
+            background-color: #1a1a1a;
+            white-space: pre-wrap;
+            color: #fff;
+        }
+        .error { color: var(--cor-erro); border: 1px solid var(--cor-erro); padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .success { color: var(--cor-sucesso); border: 1px solid var(--cor-sucesso); padding: 10px; border-radius: 5px; margin: 10px 0; }
+
+        .modal {
+            display: none; position: fixed; z-index: 100; 
+            left: 0; top: 0; width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.9); 
+            padding-top: 40px;
+        }
+        .modal-content {
+            background-color: var(--cor-container);
+            margin: auto; padding: 25px;
+            border: 1px solid var(--cor-detalhe);
+            width: 90%; max-width: 600px;
+            border-radius: 12px; max-height: 80vh; overflow-y: auto;
+        }
+        .close-button { color: var(--cor-detalhe); float: right; font-size: 28px; cursor: pointer; }
+
+        .list-item {
+            padding: 12px; border-bottom: 1px solid #333;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .list-item:hover { background-color: #1a1a1a; }
+        .list-item-content { flex-grow: 1; cursor: pointer; color: #fff; }
+
+        .zones-container { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px; }
+        .zone-box { background-color: #222; padding: 10px; border-radius: 8px; flex: 1 1 calc(50% - 10px); border-left: 4px solid var(--cor-detalhe); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Gerador de Periodização</h1>
+        <div id="auth-info" style="text-align: center; margin-bottom: 15px; font-size: 0.9em;">A carregar ambiente...</div>
+        <div id="message-container"></div>
+
+        <form id="client-form">
+            <div class="form-group">
+                <label for="nome">Nome do Aluno</label>
+                <input type="text" id="nome" placeholder="Nome Completo" required>
+            </div>
+
+            <div class="form-group">
+                <label for="periodization_weeks">Duração da Planilha</label>
+                <select id="periodization_weeks" onchange="window.updateGenerateButtonText()">
+                    <option value="4">4 Semanas (Padrão)</option>
+                    <option value="8">8 Semanas</option>
+                    <option value="12">12 Semanas</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label for="idade">Idade</label>
+                    <input type="number" id="idade">
+                </div>
+                <div style="flex: 1;">
+                    <label for="sexo">Sexo</label>
+                    <select id="sexo">
+                        <option value="Masculino">Masculino</option>
+                        <option value="Feminino">Feminino</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="objetivo_principal">Objetivo</label>
+                <input type="text" id="objetivo_principal" placeholder="Ex: Baixar tempo nos 10km" required>
+            </div>
+
+            <div class="form-group">
+                <label for="observacoes">Observações Importantes (Lesões, Restrições, Disponibilidade)</label>
+                <textarea id="observacoes" placeholder="Ex: Lesão antiga no joelho esquerdo, disponibilidade apenas no início da manhã..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="tempo_teste_3200">Teste 3200m (MM:SS)</label>
+                <input type="text" id="tempo_teste_3200" placeholder="Ex: 14:20" required>
+            </div>
+
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label for="fc_max">FC Máx</label>
+                    <input type="number" id="fc_max" placeholder="BPM" required>
+                </div>
+                <div style="flex: 1;">
+                    <label for="fc_repouso">FC Repouso</label>
+                    <input type="number" id="fc_repouso" placeholder="BPM" required>
+                </div>
+            </div>
+
+            <div class="form-group checkbox-group">
+                <label>Dias de Corrida:</label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));">
+                    <label><input type="checkbox" name="dia_corrida" value="Segunda"> Seg</label>
+                    <label><input type="checkbox" name="dia_corrida" value="Terca"> Ter</label>
+                    <label><input type="checkbox" name="dia_corrida" value="Quarta"> Qua</label>
+                    <label><input type="checkbox" name="dia_corrida" value="Quinta"> Qui</label>
+                    <label><input type="checkbox" name="dia_corrida" value="Sexta"> Sex</label>
+                    <label><input type="checkbox" name="dia_corrida" value="Sabado"> Sáb</label>
+                    <label><input type="checkbox" name="dia_corrida" value="Domingo"> Dom</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Treinos Complementares</label>
+                <div id="selected-exercises-summary" style="margin-bottom: 10px; font-size: 0.85em; color: #aaa; background: #222; padding: 8px; border-radius: 4px;">Nenhum selecionado</div>
+                <button type="button" onclick="window.openExerciseDB()" style="width: 100%; background: #222; color: gold; border: 1px solid #FFD700;">Gerenciar Exercícios</button>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" id="generate-plan-button">Gerar Planilha (4 Semanas)</button>
+                <button type="button" onclick="window.saveClient()">Salvar Aluno</button>
+                <button type="button" onclick="window.openClientListModal()" style="background: #333; color: #fff;">Lista de Alunos</button>
+            </div>
+        </form>
+
+        <div id="heart-rate-zones" class="zones-container" style="display: none;"></div>
+        <div id="pace-zones" class="zones-container" style="display: none;"></div>
+        <div id="output">O plano aparecerá aqui...</div>
+    </div>
+
+    <!-- Modais -->
+    <div id="exercise-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="window.closeExerciseDB()">&times;</span>
+            <h3>Banco de Exercícios</h3>
+            <div style="display: flex; gap: 5px; margin-bottom: 15px;">
+                <input type="text" id="new-exercise-input" placeholder="Novo exercício...">
+                <button type="button" onclick="window.addCustomExercise()" style="margin:0;">Add</button>
+            </div>
+            <div id="exercise-list-content"></div>
+            <button type="button" onclick="window.confirmExerciseSelection()" style="width: 100%; margin-top: 15px;">Confirmar</button>
+        </div>
+    </div>
+
+    <div id="client-list-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="document.getElementById('client-list-modal').style.display='none'">&times;</span>
+            <h3>Alunos Salvos</h3>
+            <div id="client-list-content"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, setDoc, deleteDoc, onSnapshot, collection, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Configurações Iniciais com Proteção ---
+        const apiKey = "";
+        let db, auth, appId;
+        let isFirebaseReady = false;
+
+        async function startSystem() {
+            try {
+                // Tentativa de carregar config
+                let firebaseConfig = null;
+                if (typeof __firebase_config !== 'undefined') {
+                    firebaseConfig = JSON.parse(__firebase_config);
+                }
+
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'periodizacao-app';
+
+                if (firebaseConfig) {
+                    const app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+                    
+                    // Auth Listener
+                    onAuthStateChanged(auth, (u) => {
+                        if (u) {
+                            window.user = u;
+                            document.getElementById('auth-info').innerHTML = `<span style="color: #28a745;">✓ Online</span>`;
+                            setupListeners();
+                        } else {
+                            handleAuth();
+                        }
+                    });
+                    isFirebaseReady = true;
+                } else {
+                    throw new Error("Config not found");
+                }
+            } catch (e) {
+                console.warn("Firebase não disponível. Iniciando modo local.");
+                document.getElementById('auth-info').innerHTML = `<span style="color: #FFD700;">⚠ Modo Local Ativo</span>`;
+                // Interface já pode ser usada para cálculos mesmo sem DB
+            }
+        }
+
+        async function handleAuth() {
+            if (!auth) return;
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.error("Auth falhou:", err);
+                document.getElementById('auth-info').innerHTML = `<span style="color: #dc3545;">Erro de Login</span>`;
+            }
+        }
+
+        function setupListeners() {
+            if (!window.user || !db) return;
+            
+            onSnapshot(collection(db, 'artifacts', appId, 'users', window.user.uid, 'clients'), (snap) => {
+                const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderClientList(list);
+            }, (err) => console.error("Firestore Clients Error:", err));
+
+            onSnapshot(collection(db, 'artifacts', appId, 'users', window.user.uid, 'exercises'), (snap) => {
+                window.allCustomExercises = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                if (document.getElementById('exercise-modal').style.display === 'block') renderExerciseModal();
+            }, (err) => console.error("Firestore Exercises Error:", err));
+        }
+
+        // Variáveis Globais de Estado
+        window.user = null;
+        window.selectedClientData = null;
+        window.selectedExercises = [];
+        window.allCustomExercises = [];
+        const standardExercises = ["Musculação", "Pilates", "Yoga", "Funcional", "Mobilidade"];
+
+        const displayMessage = (txt, isErr = false) => {
+            const container = document.getElementById('message-container');
+            container.innerHTML = `<div class="${isErr ? 'error' : 'success'}">${txt}</div>`;
+            setTimeout(() => container.innerHTML = '', 4000);
+        };
+
+        window.deleteClient = async (id, event) => {
+            if (event) event.stopPropagation();
+            if (!window.user || !db || !confirm("Deseja apagar este aluno?")) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', window.user.uid, 'clients', id));
+                if (window.selectedClientData && window.selectedClientData.id === id) {
+                    window.selectedClientData = null;
+                    document.getElementById('client-form').reset();
+                }
+                displayMessage("Aluno removido.");
+            } catch (e) { displayMessage("Erro ao remover.", true); }
+        };
+
+        window.deleteExercise = async (id, event) => {
+            if (event) event.stopPropagation();
+            if (!window.user || !db) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', window.user.uid, 'exercises', id));
+            } catch (e) { displayMessage("Erro ao remover exercício.", true); }
+        };
+
+        function renderClientList(list) {
+            const content = document.getElementById('client-list-content');
+            content.innerHTML = list.length === 0 ? "<p>Nenhum aluno salvo.</p>" : list.map(c => `
+                <div class="list-item">
+                    <div class="list-item-content" onclick="window.loadClient('${c.id}')">
+                        <strong>${c.nome || 'Sem nome'}</strong> (${c.objetivo_principal || 'Sem objetivo'})
+                    </div>
+                    <button type="button" class="btn-delete" onclick="window.deleteClient('${c.id}', event)">Apagar</button>
+                </div>`).join('');
+            window._clients = list;
+        }
+
+        function renderExerciseModal() {
+            let html = `<strong>Padrão:</strong>`;
+            standardExercises.forEach(ex => {
+                html += `<div class="list-item"><label><input type="checkbox" value="${ex}" class="ex-chk" ${window.selectedExercises.includes(ex)?'checked':''}> ${ex}</label></div>`;
+            });
+            html += `<br><strong>Personalizados:</strong>`;
+            window.allCustomExercises.forEach(ex => {
+                html += `<div class="list-item">
+                    <label><input type="checkbox" value="${ex.name}" class="ex-chk" ${window.selectedExercises.includes(ex.name)?'checked':''}> ${ex.name}</label>
+                    <button type="button" class="btn-delete" onclick="window.deleteExercise('${ex.id}', event)">X</button>
+                </div>`;
+            });
+            document.getElementById('exercise-list-content').innerHTML = html;
+        }
+
+        window.loadClient = (id) => {
+            const c = window._clients.find(x => x.id === id);
+            if (!c) return;
+            window.selectedClientData = c;
+            document.getElementById('nome').value = c.nome || '';
+            document.getElementById('objetivo_principal').value = c.objetivo_principal || '';
+            document.getElementById('observacoes').value = c.observacoes || '';
+            document.getElementById('idade').value = c.idade || '';
+            document.getElementById('tempo_teste_3200').value = c.tempo_teste_3200 || '';
+            document.getElementById('fc_max').value = c.fc_max || '';
+            document.getElementById('fc_repouso').value = c.fc_repouso || '';
+            
+            const checks = document.querySelectorAll('input[name="dia_corrida"]');
+            checks.forEach(i => i.checked = (c.dias_corrida || []).includes(i.value));
+            
+            window.selectedExercises = c.exercicios || [];
+            document.getElementById('selected-exercises-summary').innerText = window.selectedExercises.join(', ') || "Nenhum";
+            document.getElementById('client-list-modal').style.display = 'none';
+        };
+
+        window.saveClient = async () => {
+            if (!isFirebaseReady || !window.user) return displayMessage("Nuvem indisponível no momento.", true);
+            if (!document.getElementById('nome').value) return displayMessage("Nome obrigatório", true);
+            
+            const data = {
+                nome: document.getElementById('nome').value,
+                objetivo_principal: document.getElementById('objetivo_principal').value,
+                observacoes: document.getElementById('observacoes').value,
+                idade: document.getElementById('idade').value,
+                fc_max: document.getElementById('fc_max').value,
+                fc_repouso: document.getElementById('fc_repouso').value,
+                tempo_teste_3200: document.getElementById('tempo_teste_3200').value,
+                dias_corrida: Array.from(document.querySelectorAll('input[name="dia_corrida"]:checked')).map(i=>i.value),
+                exercicios: window.selectedExercises,
+                updatedAt: new Date().toISOString()
+            };
+            const coll = collection(db, 'artifacts', appId, 'users', window.user.uid, 'clients');
+            try {
+                if (window.selectedClientData) await setDoc(doc(coll, window.selectedClientData.id), data, { merge: true });
+                else {
+                    const dr = await addDoc(coll, data);
+                    window.selectedClientData = { id: dr.id, ...data };
+                }
+                displayMessage("Salvo com sucesso!");
+            } catch (e) { displayMessage("Erro ao salvar dados.", true); }
+        };
+
+        window.openExerciseDB = () => { document.getElementById('exercise-modal').style.display = 'block'; renderExerciseModal(); };
+        window.closeExerciseDB = () => document.getElementById('exercise-modal').style.display = 'none';
+        
+        window.addCustomExercise = async () => {
+            const val = document.getElementById('new-exercise-input').value.trim();
+            if (!val || !window.user || !db) return;
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'users', window.user.uid, 'exercises'), { name: val });
+                document.getElementById('new-exercise-input').value = '';
+            } catch (e) { displayMessage("Erro ao adicionar.", true); }
+        };
+
+        window.confirmExerciseSelection = () => {
+            window.selectedExercises = Array.from(document.querySelectorAll('.ex-chk:checked')).map(i=>i.value);
+            document.getElementById('selected-exercises-summary').innerText = window.selectedExercises.join(', ') || "Nenhum";
+            window.closeExerciseDB();
+        };
+
+        window.openClientListModal = () => document.getElementById('client-list-modal').style.display = 'block';
+        
+        window.updateGenerateButtonText = () => {
+            const val = document.getElementById('periodization_weeks').value;
+            document.getElementById('generate-plan-button').innerText = `Gerar Planilha (${val} Semanas)`;
+        };
+
+        document.getElementById('client-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const out = document.getElementById('output');
+            out.innerHTML = "<em>⚙️ A IA está a processar os dados e a criar a sua periodização personalizada...</em>";
+
+            const fMax = parseInt(document.getElementById('fc_max').value) || 190;
+            const fRep = parseInt(document.getElementById('fc_repouso').value) || 60;
+            const t32 = document.getElementById('tempo_teste_3200').value;
+            const res = fMax - fRep;
+            
+            const parts = t32.split(':');
+            const seg = (parseInt(parts[0])||0)*60 + (parseInt(parts[1])||0);
+            const vcm = seg / 3.2; 
+            const fmt = (s) => `${Math.floor(s/60)}:${Math.round(s%60).toString().padStart(2,'0')}`;
+
+            const hrZ = { 
+                z1:`${Math.round(res*.6+fRep)}-${Math.round(res*.7+fRep)}`, 
+                z2:`${Math.round(res*.7+fRep)}-${Math.round(res*.8+fRep)}`, 
+                z3:`${Math.round(res*.8+fRep)}-${Math.round(res*.9+fRep)}` 
+            };
+            const pcZ = { 
+                z1:`${fmt(vcm*1.3)}-${fmt(vcm*1.5)}`, 
+                z2:`${fmt(vcm*1.15)}-${fmt(vcm*1.3)}`, 
+                z3:`${fmt(vcm*1.05)}-${fmt(vcm*1.15)}` 
+            };
+
+            const zonesOut = document.getElementById('heart-rate-zones');
+            zonesOut.style.display = 'flex';
+            zonesOut.innerHTML = `<h3>Zonas FC</h3>` + Object.entries(hrZ).map(([k,v]) => `<div class="zone-box">${k.toUpperCase()}: ${v} bpm</div>`).join('');
+
+            const obs = document.getElementById('observacoes').value;
+            const prompt = `Gere uma periodização de corrida de ${document.getElementById('periodization_weeks').value} semanas em Português de Portugal. 
+            Aluno: ${document.getElementById('nome').value}. Objetivo: ${document.getElementById('objetivo_principal').value}.
+            Observações (Lesões/Restrições): ${obs || "Nenhuma"}.
+            Pace Alvo Z2: ${pcZ.z2}. FC Alvo Z2: ${hrZ.z2} bpm. 
+            Dias de Treino: ${Array.from(document.querySelectorAll('input[name="dia_corrida"]:checked')).map(i=>i.value).join(', ')}.
+            Exercícios Complementares: ${window.selectedExercises.join(', ')}. 
+            Instrução: Use tabelas Markdown, detalhe os tipos de treino (intervalado, longo, regenerativo) e inclua dicas de intensidade baseadas nas zonas calculadas.`;
+
+            try {
+                const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const d = await r.json();
+                out.innerHTML = d.candidates?.[0]?.content?.parts?.[0]?.text || "A IA não conseguiu devolver uma resposta válida.";
+                if (isFirebaseReady) window.saveClient();
+            } catch (err) { 
+                out.innerHTML = "Erro ao contactar a IA. Verifique a sua ligação à internet."; 
+            }
+        };
+
+        // Inicia o sistema após o carregamento do DOM
+        window.addEventListener('load', startSystem);
+    </script>
+</body>
+</html>
