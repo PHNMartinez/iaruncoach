@@ -1,11 +1,10 @@
 # iaruncoach
 # Projeto Web com IA – Educação Física
 
-Projeto simples desenvolvido em HTML, voltado para profissionais
-de Educação Física.
+Projeto simples desenvolvido em HTML.
 
 ## Objetivo
-Criar uma interface simples para auxiliar profissionais da área,
+Criar uma interface simples para auxiliar na criação de treinos para musculação,
 utilizando conceitos básicos de IA com apoio de ferramentas
 como o Gemini.
 
