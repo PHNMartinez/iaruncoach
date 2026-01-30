@@ -1,5 +1,4 @@
 # iaruncoach
-# Projeto Web com IA – Educação Física
 
 Projeto simples desenvolvido em HTML.
 
