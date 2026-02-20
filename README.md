@@ -1,6 +1,6 @@
 # iaruncoach
 
-Projeto desenvolvido em HTML.
+Projeto desenvolvido em Java - HTML.
 
 ## Objetivo
 Criar uma interface para auxiliar na criação de treinos para corrida,
